@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/budimanjojo/talhelper/master/pkg/config/schemas/talconfig.json
+---
+clusterName: kubernetes
+
+talosVersion: "${talosVersion}"
+kubernetesVersion: "${kubernetesVersion}"
+
+endpoint: https://172.18.200.100:6443
+additionalApiServerCertSans: &sans
+  - "127.0.0.1"
+  - "172.18.200.100"
+  - "dev-uk-htg-cl0.htg.0x1e.net"
+additionalMachineCertSans: *sans
+
+clusterPodNets: ["10.42.0.0/16"]
+clusterSvcNets: ["10.80.0.0/16"]
+
+# Disable built-in CNI to use Cilium
+cniConfig:
+  name: none
+
+nodes:
+  - hostname: "talos-isq-vus"
+    ipAddress: "172.18.200.100"
+    installDisk: "/dev/mmcblk0"
+    machineSpec:
+      secureboot: false
+    talosImageURL: factory.talos.dev/installer/11b09aacd770c0df15510e4d0815853404ada5d251a7461a21ab3ef73e1808ca
+    controlPlane: true
+    networkInterfaces:
+      - deviceSelector:
+          hardwareAddr: "00:e0:4c:19:61:b9"
+        dhcp: false
+        addresses:
+          - "172.18.200.100/24"
+        routes:
+          - network: "0.0.0.0/0"
+            gateway: "172.18.200.1"
+        mtu: 1500
+        vip:
+          ip: "172.18.200.100"
+
+# Global patches
+patches:
+  - "@./patches/global/machine-files.yaml"
+  - "@./patches/global/machine-kubelet.yaml"
+  - "@./patches/global/machine-network.yaml"
+  - "@./patches/global/machine-sysctls.yaml"
+  - "@./patches/global/machine-time.yaml"
+
+# Controller patches
+controlPlane:
+  patches:
+    - "@./patches/controller/admission-controller-patch.yaml"
+    - "@./patches/controller/cluster.yaml"
+
